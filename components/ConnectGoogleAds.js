@@ -18,6 +18,18 @@ export default function ConnectGoogleAds() {
       return
     }
 
+    // Debug session
+    console.log('Full session object:', session)
+    console.log('Session user:', session?.user)
+    console.log('Session accessToken:', session?.accessToken)
+    console.log('Session refreshToken:', session?.refreshToken)
+
+    if (!session?.refreshToken) {
+      setError('No refresh token available. Please sign out and sign in with Google again, then grant all permissions.')
+      setConnecting(false)
+      return
+    }
+
     setConnecting(true)
     setError(null)
 
