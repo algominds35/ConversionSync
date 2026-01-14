@@ -3,6 +3,8 @@ import { getServerSession } from 'next-auth'
 import { updateUserGoogleAds, getUserByEmail } from '@/lib/db'
 import { verifyAccountAccess, getConversionActions } from '@/lib/googleAds'
 
+export const dynamic = 'force-dynamic'
+
 export async function GET(request) {
   try {
     // Check authentication
