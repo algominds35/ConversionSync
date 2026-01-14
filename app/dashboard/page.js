@@ -12,6 +12,12 @@ export default async function Dashboard() {
   }
 
   const user = await getUserByEmail(session.user.email)
+  
+  // If user doesn't exist in database, redirect to sign up
+  if (!user) {
+    redirect('/auth/signup')
+  }
+  
   const stats = await getMonthlyStats(user.id)
   
   const isConnected = user.google_ads_customer_id && user.google_refresh_token
