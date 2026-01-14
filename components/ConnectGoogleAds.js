@@ -19,17 +19,41 @@ export default function ConnectGoogleAds() {
     setError(null)
 
     try {
-      // Save customer ID to localStorage before OAuth (so we don't lose it)
-      localStorage.setItem('pending_google_ads_customer_id', customerId)
-
-      // Authenticate with Google OAuth (this will redirect)
-      await signIn('google', {
-        redirect: true,
-        callbackUrl: `${window.location.origin}/api/google-ads/connect-callback`
+      // First, authenticate with Google OAuth
+      const result = await signIn('google', {
+        redirect: false,
+        callbackUrl: '/dashboard'
       })
+
+      if (result.error) {
+        throw new Error('Failed to authenticate with Google')
+      }
+
+      // Then connect the Google Ads account
+      const response = await fetch('/api/google-ads/connect', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ customerId }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to connect Google Ads account')
+      }
+
+      setSuccess(true)
+      
+      // Refresh page after 2 seconds
+      setTimeout(() => {
+        window.location.reload()
+      }, 2000)
 
     } catch (err) {
       setError(err.message)
+    } finally {
       setConnecting(false)
     }
   }

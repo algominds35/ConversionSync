@@ -52,28 +52,6 @@ const handler = NextAuth({
   ],
 
   callbacks: {
-    async signIn({ user, account, profile }) {
-      // If signing in with Google OAuth
-      if (account?.provider === 'google') {
-        try {
-          // Check if user exists in database
-          let dbUser = await getUserByEmail(user.email)
-          
-          // If user doesn't exist, create them
-          if (!dbUser) {
-            dbUser = await createUser(user.email, null) // No password for OAuth users
-          }
-          
-          return true
-        } catch (error) {
-          console.error('Error creating user:', error)
-          return false
-        }
-      }
-      
-      return true
-    },
-
     async jwt({ token, account, user }) {
       // On sign in, add access token and refresh token
       if (account) {
