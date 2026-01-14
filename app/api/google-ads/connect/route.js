@@ -7,27 +7,39 @@ export async function POST(request) {
   try {
     // Check authentication
     const session = await getServerSession()
+    
+    console.log('=== CONNECT API DEBUG ===')
+    console.log('Session exists:', !!session)
+    console.log('Session user:', session?.user?.email)
+    console.log('Has refreshToken:', !!session?.refreshToken)
+    
     if (!session) {
       return NextResponse.json(
-        { error: 'Unauthorized' },
+        { error: 'Unauthorized - No session found' },
         { status: 401 }
       )
     }
 
     // Get user from database
     const user = await getUserByEmail(session.user.email)
+    
+    console.log('User found in DB:', !!user)
+    
     if (!user) {
       return NextResponse.json(
-        { error: 'User not found' },
+        { error: 'User not found in database' },
         { status: 404 }
       )
     }
 
     // Get tokens from session
     const { refreshToken } = session
+    
+    console.log('RefreshToken present:', !!refreshToken)
+    
     if (!refreshToken) {
       return NextResponse.json(
-        { error: 'No refresh token available. Please re-authenticate with Google.' },
+        { error: 'No refresh token available. The OAuth flow may not have completed properly. Please try connecting again.' },
         { status: 400 }
       )
     }
@@ -35,6 +47,9 @@ export async function POST(request) {
     // Get customer ID from request
     const body = await request.json()
     const { customerId } = body
+    
+    console.log('Request body:', body)
+    console.log('Customer ID:', customerId)
 
     if (!customerId) {
       return NextResponse.json(
