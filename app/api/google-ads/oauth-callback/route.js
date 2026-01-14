@@ -1,4 +1,4 @@
-import { updateUserGoogleAds } from '@/lib/db'
+import { updateUserGoogleAds, getUserByEmail } from '@/lib/db'
 
 export const dynamic = 'force-dynamic'
 
@@ -25,13 +25,11 @@ export async function GET(request) {
 
     console.log('Raw state parameter:', stateParam)
 
-    // Decode state parameter to get email and customer ID
-    let state
+    // Decode state parameter to get email
+    let email
     try {
-      const decoded = Buffer.from(stateParam, 'base64').toString()
-      console.log('Decoded state:', decoded)
-      state = JSON.parse(decoded)
-      console.log('Parsed state:', state)
+      email = Buffer.from(stateParam, 'base64').toString()
+      console.log('Decoded email:', email)
     } catch (err) {
       console.error('Failed to decode state:', err)
       return Response.redirect(
@@ -39,18 +37,36 @@ export async function GET(request) {
       )
     }
 
-    const { email, customerId } = state || {}
-
-    if (!email || !customerId) {
-      console.error('Missing email or customerId in state:', state)
+    if (!email) {
+      console.error('Missing email in state')
       return Response.redirect(
-        `${process.env.NEXTAUTH_URL}/dashboard?error=missing_customer_data`
+        `${process.env.NEXTAUTH_URL}/dashboard?error=missing_email`
+      )
+    }
+
+    // Get user from database to retrieve customer ID
+    console.log('Fetching user from database:', email)
+    const user = await getUserByEmail(email)
+    
+    if (!user) {
+      console.error('User not found:', email)
+      return Response.redirect(
+        `${process.env.NEXTAUTH_URL}/dashboard?error=user_not_found`
+      )
+    }
+
+    const customerId = user.google_ads_customer_id
+
+    if (!customerId) {
+      console.error('Customer ID not found for user:', email)
+      return Response.redirect(
+        `${process.env.NEXTAUTH_URL}/dashboard?error=missing_customer_id`
       )
     }
 
     console.log('OAuth callback - exchanging code for tokens...')
-    console.log('User email from state:', email)
-    console.log('Customer ID from state:', customerId)
+    console.log('User email:', email)
+    console.log('Customer ID from database:', customerId)
 
     // Ensure the base URL has https:// protocol
     let baseUrl = process.env.NEXTAUTH_URL || 'https://conversion-sync.vercel.app'
@@ -96,12 +112,8 @@ export async function GET(request) {
     console.log('Customer ID:', customerId)
     console.log('Refresh token length:', tokens.refresh_token.length)
 
-    // Save to database
-    await updateUserGoogleAds({
-      email: email,
-      customerId: customerId,
-      refreshToken: tokens.refresh_token
-    })
+    // Save refresh token to database (customer ID already saved)
+    await updateUserGoogleAds(email, tokens.refresh_token)
 
     console.log('✅ Google Ads connected successfully!')
 

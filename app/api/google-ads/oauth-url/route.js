@@ -1,5 +1,6 @@
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/app/api/auth/[...nextauth]/route'
+import { savePendingCustomerId } from '@/lib/db'
 
 export const dynamic = 'force-dynamic'
 
@@ -16,6 +17,14 @@ export async function POST(request) {
     if (!customerId) {
       return Response.json({ error: 'Customer ID is required' }, { status: 400 })
     }
+
+    // Clean customer ID (remove dashes)
+    const cleanCustomerId = customerId.replace(/-/g, '')
+
+    // Save customer ID to database BEFORE OAuth redirect
+    console.log('Saving customer ID to database for user:', session.user.email)
+    await savePendingCustomerId(session.user.email, cleanCustomerId)
+    console.log('Customer ID saved successfully')
 
     const clientId = process.env.GOOGLE_CLIENT_ID
     
@@ -35,16 +44,10 @@ export async function POST(request) {
     // Build OAuth URL for Google Ads API access
     const oauthUrl = new URL('https://accounts.google.com/o/oauth2/v2/auth')
     
-    // Encode email and customer ID in state parameter
-    const stateData = {
-      email: session.user.email,
-      customerId: customerId.replace(/-/g, '')
-    }
+    // Just pass email in state (customer ID is already saved in DB)
+    const state = Buffer.from(session.user.email).toString('base64')
     
-    console.log('State data before encoding:', stateData)
-    
-    const state = Buffer.from(JSON.stringify(stateData)).toString('base64')
-    
+    console.log('User email:', session.user.email)
     console.log('Encoded state:', state)
     
     oauthUrl.searchParams.append('client_id', clientId)
