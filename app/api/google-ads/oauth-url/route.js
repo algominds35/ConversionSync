@@ -18,7 +18,13 @@ export async function POST(request) {
     }
 
     const clientId = process.env.GOOGLE_CLIENT_ID
-    const redirectUri = `${process.env.NEXTAUTH_URL}/api/google-ads/oauth-callback`
+    const baseUrl = process.env.NEXTAUTH_URL || 'https://conversion-sync.vercel.app'
+    const redirectUri = `${baseUrl}/api/google-ads/oauth-callback`
+    
+    console.log('=== OAuth URL Generation ===')
+    console.log('NEXTAUTH_URL:', process.env.NEXTAUTH_URL)
+    console.log('Redirect URI:', redirectUri)
+    console.log('Client ID:', clientId ? 'Set' : 'NOT SET')
     
     // Build OAuth URL for Google Ads API access
     const oauthUrl = new URL('https://accounts.google.com/o/oauth2/v2/auth')
@@ -36,6 +42,8 @@ export async function POST(request) {
     oauthUrl.searchParams.append('access_type', 'offline')
     oauthUrl.searchParams.append('prompt', 'consent')
     oauthUrl.searchParams.append('state', state)
+
+    console.log('Generated OAuth URL:', oauthUrl.toString())
 
     return Response.json({ url: oauthUrl.toString() })
 
