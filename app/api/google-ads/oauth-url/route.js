@@ -36,10 +36,16 @@ export async function POST(request) {
     const oauthUrl = new URL('https://accounts.google.com/o/oauth2/v2/auth')
     
     // Encode email and customer ID in state parameter
-    const state = Buffer.from(JSON.stringify({
+    const stateData = {
       email: session.user.email,
       customerId: customerId.replace(/-/g, '')
-    })).toString('base64')
+    }
+    
+    console.log('State data before encoding:', stateData)
+    
+    const state = Buffer.from(JSON.stringify(stateData)).toString('base64')
+    
+    console.log('Encoded state:', state)
     
     oauthUrl.searchParams.append('client_id', clientId)
     oauthUrl.searchParams.append('redirect_uri', redirectUri)

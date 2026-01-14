@@ -17,14 +17,36 @@ export async function GET(request) {
     }
 
     if (!code || !stateParam) {
+      console.error('Missing code or state parameter')
       return Response.redirect(
         `${process.env.NEXTAUTH_URL}/dashboard?error=missing_parameters`
       )
     }
 
+    console.log('Raw state parameter:', stateParam)
+
     // Decode state parameter to get email and customer ID
-    const state = JSON.parse(Buffer.from(stateParam, 'base64').toString())
-    const { email, customerId } = state
+    let state
+    try {
+      const decoded = Buffer.from(stateParam, 'base64').toString()
+      console.log('Decoded state:', decoded)
+      state = JSON.parse(decoded)
+      console.log('Parsed state:', state)
+    } catch (err) {
+      console.error('Failed to decode state:', err)
+      return Response.redirect(
+        `${process.env.NEXTAUTH_URL}/dashboard?error=invalid_state`
+      )
+    }
+
+    const { email, customerId } = state || {}
+
+    if (!email || !customerId) {
+      console.error('Missing email or customerId in state:', state)
+      return Response.redirect(
+        `${process.env.NEXTAUTH_URL}/dashboard?error=missing_customer_data`
+      )
+    }
 
     console.log('OAuth callback - exchanging code for tokens...')
     console.log('User email from state:', email)
