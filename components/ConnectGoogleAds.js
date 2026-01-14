@@ -1,9 +1,12 @@
 'use client'
 
-import { useState } from 'react'
-import { signIn } from 'next-auth/react'
+import { useState, useEffect } from 'react'
+import { useSession } from 'next-auth/react'
+import { useRouter } from 'next/navigation'
 
 export default function ConnectGoogleAds() {
+  const { data: session } = useSession()
+  const router = useRouter()
   const [customerId, setCustomerId] = useState('')
   const [connecting, setConnecting] = useState(false)
   const [error, setError] = useState(null)
@@ -19,17 +22,38 @@ export default function ConnectGoogleAds() {
     setError(null)
 
     try {
-      // Save customer ID to localStorage before OAuth
-      localStorage.setItem('pendingCustomerId', customerId)
-      
-      // Redirect to Google OAuth for Google Ads API access
-      // This will redirect to /api/google-ads/connect-callback after authorization
-      await signIn('google', {
-        callbackUrl: `/api/google-ads/connect-callback?customerId=${encodeURIComponent(customerId)}`
+      console.log('Connecting with Customer ID:', customerId)
+      console.log('Session refresh token exists:', !!session?.refreshToken)
+
+      // Call the connect API directly with the customer ID
+      const response = await fetch('/api/google-ads/connect', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          customerId: customerId.replace(/-/g, '') // Remove dashes
+        }),
       })
 
+      const data = await response.json()
+      console.log('Connect API response:', data)
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to connect Google Ads account')
+      }
+
+      setSuccess(true)
+      
+      // Redirect to dashboard after 2 seconds
+      setTimeout(() => {
+        router.push('/dashboard')
+      }, 2000)
+
     } catch (err) {
+      console.error('Connection error:', err)
       setError(err.message)
+    } finally {
       setConnecting(false)
     }
   }
