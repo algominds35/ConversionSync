@@ -30,6 +30,12 @@ export async function GET(request) {
     console.log('User email from state:', email)
     console.log('Customer ID from state:', customerId)
 
+    // Ensure the base URL has https:// protocol
+    let baseUrl = process.env.NEXTAUTH_URL || 'https://conversion-sync.vercel.app'
+    if (!baseUrl.startsWith('http')) {
+      baseUrl = `https://${baseUrl}`
+    }
+
     // Exchange authorization code for tokens
     const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
       method: 'POST',
@@ -40,7 +46,7 @@ export async function GET(request) {
         code,
         client_id: process.env.GOOGLE_CLIENT_ID,
         client_secret: process.env.GOOGLE_CLIENT_SECRET,
-        redirect_uri: `${process.env.NEXTAUTH_URL}/api/google-ads/oauth-callback`,
+        redirect_uri: `${baseUrl}/api/google-ads/oauth-callback`,
         grant_type: 'authorization_code',
       }),
     })

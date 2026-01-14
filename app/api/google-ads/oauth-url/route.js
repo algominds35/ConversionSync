@@ -18,7 +18,13 @@ export async function POST(request) {
     }
 
     const clientId = process.env.GOOGLE_CLIENT_ID
-    const baseUrl = process.env.NEXTAUTH_URL || 'https://conversion-sync.vercel.app'
+    
+    // Ensure the base URL has https:// protocol
+    let baseUrl = process.env.NEXTAUTH_URL || 'https://conversion-sync.vercel.app'
+    if (!baseUrl.startsWith('http')) {
+      baseUrl = `https://${baseUrl}`
+    }
+    
     const redirectUri = `${baseUrl}/api/google-ads/oauth-callback`
     
     console.log('=== OAuth URL Generation ===')
