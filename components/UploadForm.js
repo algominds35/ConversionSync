@@ -204,25 +204,33 @@ export default function UploadForm({ conversionActions }) {
         {/* Conversion Action */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            Conversion Action *
+            Conversion Action Resource Name *
           </label>
-          <select
+          <input
+            type="text"
             name="conversionAction"
             value={formData.conversionAction}
             onChange={handleChange}
             required
+            placeholder="customers/1208386429/conversionActions/123456789"
             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-          >
-            {conversionActions && conversionActions.length > 0 ? (
-              conversionActions.map((action) => (
-                <option key={action.resourceName} value={action.resourceName}>
-                  {action.name} ({action.type})
-                </option>
-              ))
-            ) : (
-              <option value="">No conversion actions found</option>
-            )}
-          </select>
+          />
+          <div className="mt-2 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+            <p className="text-xs text-yellow-900">
+              <strong>How to find your conversion action resource name:</strong>
+              <br />
+              1. Go to <a href="https://ads.google.com/aw/conversions" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Google Ads → Conversions</a>
+              <br />
+              2. Click on your conversion action (e.g., "Purchase")
+              <br />
+              3. Look at the URL bar - it contains the resource name
+              <br />
+              4. Format: <code className="bg-yellow-100 px-1">customers/YOUR_CUSTOMER_ID/conversionActions/ACTION_ID</code>
+              <br />
+              <br />
+              <strong>Example:</strong> customers/1208386429/conversionActions/987654321
+            </p>
+          </div>
         </div>
 
         {/* Submit Button */}
