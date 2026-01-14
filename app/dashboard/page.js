@@ -1,7 +1,7 @@
 import { getServerSession } from 'next-auth'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
-import { getUserByEmail, getMonthlyStats } from '@/lib/db'
+import { getUserByEmail, getMonthlyStats, createUser } from '@/lib/db'
 import { formatCurrency } from '@/lib/utils'
 
 export default async function Dashboard() {
@@ -11,11 +11,20 @@ export default async function Dashboard() {
     redirect('/auth/signin')
   }
 
-  const user = await getUserByEmail(session.user.email)
+  let user = await getUserByEmail(session.user.email)
   
-  // If user doesn't exist in database, redirect to sign up
+  // If user doesn't exist in database, create them (for OAuth users)
+  if (!user && session.user.email) {
+    try {
+      user = await createUser(session.user.email, null)
+    } catch (error) {
+      console.error('Error creating user:', error)
+      redirect('/auth/signin')
+    }
+  }
+  
   if (!user) {
-    redirect('/auth/signup')
+    redirect('/auth/signin')
   }
   
   const stats = await getMonthlyStats(user.id)
