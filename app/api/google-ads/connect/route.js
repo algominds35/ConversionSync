@@ -54,7 +54,11 @@ export async function POST(request) {
     // Verification will happen when they upload their first conversion
     
     // Update user in database with Google Ads connection
-    await updateUserGoogleAds(user.id, formattedCustomerId, refreshToken)
+    await updateUserGoogleAds(user.id, {
+      customerId: formattedCustomerId,
+      accessToken: session.accessToken,
+      refreshToken: refreshToken,
+    })
 
     console.log('User updated successfully')
 
