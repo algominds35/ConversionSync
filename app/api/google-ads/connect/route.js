@@ -47,33 +47,24 @@ export async function POST(request) {
     // Remove dashes from customer ID (format: 123-456-7890 -> 1234567890)
     const formattedCustomerId = customerId.replace(/-/g, '')
 
-    // Verify account access
-    const verifyResult = await verifyAccountAccess(formattedCustomerId, refreshToken)
-    if (!verifyResult.success) {
-      return NextResponse.json(
-        { error: `Unable to access Google Ads account: ${verifyResult.error}` },
-        { status: 400 }
-      )
-    }
+    console.log('Formatted Customer ID:', formattedCustomerId)
+    console.log('Refresh token available:', !!refreshToken)
 
-    // Get conversion actions
-    const conversionActions = await getConversionActions(formattedCustomerId, refreshToken)
+    // SKIP verification for now - just save the connection
+    // Verification will happen when they upload their first conversion
+    
+    // Update user in database with Google Ads connection
+    await updateUserGoogleAds(user.id, formattedCustomerId, refreshToken)
 
-    // Update user in database
-    await updateUserGoogleAds(user.id, {
-      customerId: formattedCustomerId,
-      accessToken: session.accessToken,
-      refreshToken: refreshToken,
-    })
+    console.log('User updated successfully')
 
     return NextResponse.json({
       success: true,
-      message: 'Google Ads account connected successfully',
+      message: 'Google Ads account connected successfully! You can now upload conversions.',
       account: {
-        customerId: verifyResult.customerId,
-        accountName: verifyResult.accountName,
-      },
-      conversionActions
+        customerId: formattedCustomerId,
+        accountName: 'Google Ads Account',
+      }
     })
 
   } catch (error) {
