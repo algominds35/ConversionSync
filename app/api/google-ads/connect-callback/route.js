@@ -2,12 +2,13 @@ import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { updateUserGoogleAds, getUserByEmail } from '@/lib/db'
 import { verifyAccountAccess, getConversionActions } from '@/lib/googleAds'
+import { authOptions } from '@/app/api/auth/[...nextauth]/route'
 
 export const dynamic = 'force-dynamic'
 
 export async function GET(request) {
   try {
-    const session = await getServerSession()
+    const session = await getServerSession(authOptions)
     
     console.log('Connect callback - Session exists:', !!session)
     console.log('Connect callback - Has refreshToken:', !!session?.refreshToken)

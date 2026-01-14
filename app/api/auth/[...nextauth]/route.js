@@ -4,7 +4,7 @@ import GoogleProvider from 'next-auth/providers/google'
 import bcrypt from 'bcryptjs'
 import { getUserByEmail, createUser } from '@/lib/db'
 
-const handler = NextAuth({
+export const authOptions = {
   providers: [
     // Email/Password authentication
     CredentialsProvider({
@@ -52,6 +52,17 @@ const handler = NextAuth({
   ],
 
   callbacks: {
+    async signIn({ user, account, profile }) {
+      // Auto-create user in database on Google OAuth if they don't exist
+      if (account?.provider === 'google') {
+        const existingUser = await getUserByEmail(user.email)
+        if (!existingUser) {
+          await createUser(user.email, null) // null password for OAuth users
+        }
+      }
+      return true
+    },
+
     async jwt({ token, account, user }) {
       // On sign in, add access token and refresh token
       if (account) {
@@ -86,6 +97,8 @@ const handler = NextAuth({
   },
 
   secret: process.env.NEXTAUTH_SECRET,
-})
+}
+
+const handler = NextAuth(authOptions)
 
 export { handler as GET, handler as POST }

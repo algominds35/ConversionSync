@@ -4,9 +4,10 @@ import Link from 'next/link'
 import { getUserByEmail } from '@/lib/db'
 import { getConversionActions } from '@/lib/googleAds'
 import UploadForm from '@/components/UploadForm'
+import { authOptions } from '@/app/api/auth/[...nextauth]/route'
 
 export default async function UploadPage() {
-  const session = await getServerSession()
+  const session = await getServerSession(authOptions)
   
   if (!session) {
     redirect('/auth/signin')

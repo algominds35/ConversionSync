@@ -2,9 +2,10 @@ import { getServerSession } from 'next-auth'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import ConnectGoogleAds from '@/components/ConnectGoogleAds'
+import { authOptions } from '@/app/api/auth/[...nextauth]/route'
 
 export default async function ConnectPage() {
-  const session = await getServerSession()
+  const session = await getServerSession(authOptions)
   
   if (!session) {
     redirect('/auth/signin')

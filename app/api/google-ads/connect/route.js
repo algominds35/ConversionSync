@@ -2,11 +2,12 @@ import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { updateUserGoogleAds, getUserByEmail } from '@/lib/db'
 import { verifyAccountAccess, getConversionActions } from '@/lib/googleAds'
+import { authOptions } from '@/app/api/auth/[...nextauth]/route'
 
 export async function POST(request) {
   try {
     // Check authentication
-    const session = await getServerSession()
+    const session = await getServerSession(authOptions)
     if (!session) {
       return NextResponse.json(
         { error: 'Unauthorized' },
