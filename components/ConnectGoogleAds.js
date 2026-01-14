@@ -1,16 +1,16 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { useSession } from 'next-auth/react'
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 
 export default function ConnectGoogleAds() {
-  const { data: session } = useSession()
   const router = useRouter()
   const [customerId, setCustomerId] = useState('')
+  const [refreshToken, setRefreshToken] = useState('')
   const [connecting, setConnecting] = useState(false)
   const [error, setError] = useState(null)
   const [success, setSuccess] = useState(false)
+  const [showInstructions, setShowInstructions] = useState(false)
 
   const handleConnect = async () => {
     if (!customerId) {
@@ -18,15 +18,8 @@ export default function ConnectGoogleAds() {
       return
     }
 
-    // Debug session
-    console.log('Full session object:', session)
-    console.log('Session user:', session?.user)
-    console.log('Session accessToken:', session?.accessToken)
-    console.log('Session refreshToken:', session?.refreshToken)
-
-    if (!session?.refreshToken) {
-      setError('No refresh token available. Please sign out and sign in with Google again, then grant all permissions.')
-      setConnecting(false)
+    if (!refreshToken) {
+      setError('Please enter your OAuth Refresh Token')
       return
     }
 
@@ -34,22 +27,19 @@ export default function ConnectGoogleAds() {
     setError(null)
 
     try {
-      console.log('Connecting with Customer ID:', customerId)
-      console.log('Session refresh token exists:', !!session?.refreshToken)
-
-      // Call the connect API directly with the customer ID
-      const response = await fetch('/api/google-ads/connect', {
+      // Call the connect API with customer ID and refresh token
+      const response = await fetch('/api/google-ads/connect-manual', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ 
-          customerId: customerId.replace(/-/g, '') // Remove dashes
+          customerId: customerId.replace(/-/g, ''),
+          refreshToken: refreshToken.trim()
         }),
       })
 
       const data = await response.json()
-      console.log('Connect API response:', data)
 
       if (!response.ok) {
         throw new Error(data.error || 'Failed to connect Google Ads account')
@@ -71,28 +61,72 @@ export default function ConnectGoogleAds() {
   }
 
   return (
-    <div className="bg-white p-8 rounded-lg shadow-lg max-w-md mx-auto">
+    <div className="bg-white p-8 rounded-lg shadow-lg max-w-3xl mx-auto">
       <h2 className="text-2xl font-bold mb-4">Connect Google Ads Account</h2>
       
       <p className="text-gray-600 mb-6">
-        To upload conversions, we need to connect to your Google Ads account.
+        To upload conversions, you need to provide your Google Ads Customer ID and OAuth Refresh Token.
       </p>
 
+      {/* Customer ID */}
       <div className="mb-4">
         <label className="block text-sm font-medium text-gray-700 mb-2">
-          Google Ads Customer ID
+          Google Ads Customer ID *
         </label>
         <input
           type="text"
-          placeholder="123-456-7890"
+          placeholder="140-461-0772"
           value={customerId}
           onChange={(e) => setCustomerId(e.target.value)}
           className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
         />
-        <p className="text-sm text-gray-500 mt-2">
-          Find this in your Google Ads account (format: XXX-XXX-XXXX)
+        <p className="text-xs text-gray-500 mt-1">
+          Find this at the top of your Google Ads dashboard
         </p>
       </div>
+
+      {/* Refresh Token */}
+      <div className="mb-4">
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          OAuth Refresh Token *
+        </label>
+        <textarea
+          placeholder="1//0gAB... (paste your refresh token here)"
+          value={refreshToken}
+          onChange={(e) => setRefreshToken(e.target.value)}
+          rows={3}
+          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent font-mono text-sm"
+        />
+        <button
+          type="button"
+          onClick={() => setShowInstructions(!showInstructions)}
+          className="text-sm text-indigo-600 hover:text-indigo-800 mt-1"
+        >
+          {showInstructions ? '▼ Hide' : '▶ Show'} instructions on how to get your refresh token
+        </button>
+      </div>
+
+      {/* Instructions */}
+      {showInstructions && (
+        <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg text-sm">
+          <p className="font-bold text-blue-900 mb-2">How to Get Your OAuth Refresh Token:</p>
+          <ol className="list-decimal list-inside space-y-2 text-blue-800">
+            <li>Go to <a href="https://developers.google.com/oauthplayground" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Google OAuth Playground</a></li>
+            <li>Click the gear icon (⚙️) in top right</li>
+            <li>Check "Use your own OAuth credentials"</li>
+            <li>Enter your Client ID: <code className="bg-blue-100 px-1">{process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || '[Get from Vercel env vars]'}</code></li>
+            <li>Enter your Client Secret</li>
+            <li>Close the settings</li>
+            <li>In "Step 1", find and select: <strong>Google Ads API v14</strong></li>
+            <li>Under it, check: <code className="bg-blue-100 px-1">https://www.googleapis.com/auth/adwords</code></li>
+            <li>Click "Authorize APIs"</li>
+            <li>Sign in and grant permissions</li>
+            <li>In "Step 2", click "Exchange authorization code for tokens"</li>
+            <li>Copy the <strong>"Refresh token"</strong> value</li>
+            <li>Paste it in the field above!</li>
+          </ol>
+        </div>
+      )}
 
       {error && (
         <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
@@ -114,15 +148,9 @@ export default function ConnectGoogleAds() {
         {connecting ? 'Connecting...' : 'Connect Google Ads'}
       </button>
 
-      <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-        <p className="text-sm text-blue-900">
-          <strong>What happens next:</strong>
-          <br />
-          1. You'll authorize access to your Google Ads account
-          <br />
-          2. We'll verify we can access your conversion data
-          <br />
-          3. You'll be ready to upload conversions!
+      <div className="mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+        <p className="text-sm text-yellow-900">
+          <strong>⚠️ Note:</strong> You only need to do this setup once. After connecting, you can upload unlimited conversions!
         </p>
       </div>
     </div>

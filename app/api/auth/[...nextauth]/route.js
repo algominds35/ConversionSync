@@ -66,6 +66,12 @@ export const authOptions = {
     async jwt({ token, account, user }) {
       // On sign in, add access token and refresh token
       if (account) {
+        console.log('=== JWT CALLBACK ===')
+        console.log('Account provider:', account.provider)
+        console.log('Account has access_token:', !!account.access_token)
+        console.log('Account has refresh_token:', !!account.refresh_token)
+        console.log('Account object:', JSON.stringify(account, null, 2))
+        
         token.accessToken = account.access_token
         token.refreshToken = account.refresh_token
       }
@@ -73,6 +79,8 @@ export const authOptions = {
       if (user) {
         token.id = user.id
       }
+
+      console.log('Token has refreshToken:', !!token.refreshToken)
 
       return token
     },
