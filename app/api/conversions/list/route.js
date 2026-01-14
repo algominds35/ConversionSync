@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { getConversionsByUser, getUserByEmail } from '@/lib/db'
 
+export const dynamic = 'force-dynamic'
+
 export async function GET(request) {
   try {
     // Check authentication
