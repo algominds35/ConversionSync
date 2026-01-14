@@ -1,29 +1,73 @@
-import { getServerSession } from 'next-auth'
-import { redirect } from 'next/navigation'
-import { getUserByEmail, getMonthlyStats } from '@/lib/db'
+'use client'
+
+import { useSearchParams } from 'next/navigation'
+import Link from 'next/link'
 import { formatCurrency } from '@/lib/utils'
-import { authOptions } from '@/app/api/auth/[...nextauth]/route'
-import DashboardClient from './DashboardClient'
+import { Suspense } from 'react'
 
-export default async function Dashboard() {
-  const session = await getServerSession(authOptions)
-  
-  if (!session) {
-    redirect('/auth/signin')
-  }
+function DashboardContent({ session, user, stats, isConnected }) {
+  const searchParams = useSearchParams()
+  const success = searchParams.get('success')
+  const error = searchParams.get('error')
 
-  const user = await getUserByEmail(session.user.email)
-  const stats = await getMonthlyStats(user.id)
-  
-  const isConnected = user.google_ads_customer_id && user.google_refresh_token
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <header className="bg-white shadow">
+        <div className="container mx-auto px-4 py-6 flex justify-between items-center">
+          <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
+          <div className="flex items-center gap-4">
+            <span className="text-gray-600">{session.user.email}</span>
+            <Link href="/api/auth/signout" className="text-sm text-gray-500 hover:text-gray-700">
+              Sign Out
+            </Link>
+          </div>
+        </div>
+      </header>
 
-  return <DashboardClient 
-    session={session} 
-    user={user} 
-    stats={stats} 
-    isConnected={isConnected} 
-  />
-}
+      <main className="container mx-auto px-4 py-12">
+        {/* Success Message */}
+        {success === 'google_ads_connected' && (
+          <div className="mb-8 bg-green-50 border border-green-200 rounded-lg p-6">
+            <h3 className="text-lg font-bold text-green-900 mb-2">
+              ✅ Google Ads Connected Successfully!
+            </h3>
+            <p className="text-green-700">
+              You can now upload conversions to your Google Ads account.
+            </p>
+          </div>
+        )}
+
+        {/* Error Message */}
+        {error && (
+          <div className="mb-8 bg-red-50 border border-red-200 rounded-lg p-6">
+            <h3 className="text-lg font-bold text-red-900 mb-2">
+              ❌ Connection Error
+            </h3>
+            <p className="text-red-700">
+              {error === 'no_refresh_token' && 'Failed to get refresh token from Google. Please try again.'}
+              {error === 'missing_parameters' && 'Missing required parameters. Please try again.'}
+              {error === 'token_exchange_failed' && 'Failed to exchange authorization code. Please try again.'}
+              {error === 'missing_customer_id' && 'Customer ID was not provided. Please try again.'}
+              {!['no_refresh_token', 'missing_parameters', 'token_exchange_failed', 'missing_customer_id'].includes(error) && error}
+            </p>
+          </div>
+        )}
+
+        {/* Connection Status */}
+        {!isConnected && (
+          <div className="mb-8 bg-yellow-50 border border-yellow-200 rounded-lg p-6">
+            <h3 className="text-lg font-bold text-yellow-900 mb-2">
+              ⚠️ Connect Your Google Ads Account
+            </h3>
+            <p className="text-yellow-700 mb-4">
+              To upload conversions, you need to connect your Google Ads account first.
+            </p>
+            <Link href="/connect" className="inline-block bg-yellow-600 text-white px-6 py-2 rounded-lg hover:bg-yellow-700">
+              Connect Now
+            </Link>
+          </div>
+        )}
 
         {/* Stats */}
         <div className="grid md:grid-cols-4 gap-6 mb-12">
@@ -107,5 +151,13 @@ export default async function Dashboard() {
         </div>
       </main>
     </div>
+  )
+}
+
+export default function DashboardClient(props) {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <DashboardContent {...props} />
+    </Suspense>
   )
 }
