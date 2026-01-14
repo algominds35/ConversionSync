@@ -1,13 +1,70 @@
-import { getServerSession } from 'next-auth'
-import { redirect } from 'next/navigation'
+'use client'
+
+import { useEffect, useState } from 'react'
+import { useSession } from 'next-auth/react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import ConnectGoogleAds from '@/components/ConnectGoogleAds'
 
-export default async function ConnectPage() {
-  const session = await getServerSession()
-  
+export default function ConnectPage() {
+  const { data: session } = useSession()
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const [isConnecting, setIsConnecting] = useState(false)
+
+  useEffect(() => {
+    // After OAuth redirect, if we have a session with refreshToken and a pending customer ID
+    if (session?.refreshToken && searchParams.get('step') === 'finalize') {
+      const customerId = localStorage.getItem('pending_google_ads_customer_id')
+      
+      if (customerId) {
+        setIsConnecting(true)
+        
+        // Complete the connection
+        fetch('/api/google-ads/connect', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ customerId }),
+        })
+        .then(res => res.json())
+        .then(data => {
+          // Clear stored customer ID
+          localStorage.removeItem('pending_google_ads_customer_id')
+          
+          if (data.success) {
+            // Redirect to dashboard
+            router.push('/dashboard')
+          } else {
+            alert('Failed to connect: ' + (data.error || 'Unknown error'))
+            setIsConnecting(false)
+          }
+        })
+        .catch(err => {
+          alert('Error connecting: ' + err.message)
+          localStorage.removeItem('pending_google_ads_customer_id')
+          setIsConnecting(false)
+        })
+      }
+    }
+  }, [session, searchParams, router])
+
   if (!session) {
-    redirect('/auth/signin')
+    router.push('/auth/signin')
+    return null
+  }
+
+  if (isConnecting) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-4xl mb-4">⏳</div>
+          <h2 className="text-2xl font-bold">Connecting Google Ads...</h2>
+          <p className="text-gray-600 mt-2">Please wait...</p>
+        </div>
+      </div>
+    )
   }
 
   return (
